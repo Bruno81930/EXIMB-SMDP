@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib '../../lib';
+use v5.10;
+
+use Test::Simple tests => 27;
+use Test::More;
+use Test::Exception;
+
+require_ok('Extractor::BugsDotJarExtractor');
+require Extractor::BugsDotJarExtractor;
+
+my $outpath = "/tmp/smell";
+my $d = Extractor::BugsDotJarExtractor->new(outpath => $outpath);
+
+my $projectName = "accumulo";
+my $projectNumberOfBugs = "98";
+
+ok($d->getNumberOfBugs($projectName) eq $projectNumberOfBugs, 'Testing getNumberOfBugs for project Accumulo');
+
+my $projectNameFail = "accumuloo";
+dies_ok( sub {$d->getNumberOfBugs($projectNameFail)}, 'Testing FailedgetNumberOfBugs for Wrong project Accumuloo');
+
+my $firstBugVersionName = "remotes/origin/bugs-dot-jar_ACCUMULO-1044_9396979b";
+
+my $failBugVersionName = "remotes/origin/bugs-dot-jar_ACCUMULO";
+
+ok(@{$d->_getBugVersionNames($projectName)}[0] eq $firstBugVersionName, 'Testing getBugVersionNames: first project');
+
+ok(scalar @{$d->_getBugVersionNames($projectName)} eq 98, 'Testing getBugVersionNames: number projects');
+
+ok($d->_getBugVersionName($projectName, 0) eq $firstBugVersionName, 'Testing getBugVersionName');
+
+dies_ok(sub {$d->_getBugVersionName($projectName, 200)}, 'Test failing _getBugVersionName: over the maximum version');
+
+dies_ok(sub {$d->_getBugVersionName($projectNameFail, 0)}, 'Test failing _getBugVersionName: wrong project name');
+
+dies_ok(sub {$d->_checkoutToClass($projectNameFail, $firstBugVersionName)}, 'Test failing _checkoutToClass method: wrong project name');
+
+dies_ok(sub {$d->_checkoutToClass($projectName, $failBugVersionName)}, 'Test failing _checkoutToClass method: wrong version bug number'); 
+
+my $defectiveClass = "org.apache.accumulo.server.constraints.MetadataConstraints";
+
+$d->_checkoutToClass($projectName, $firstBugVersionName);
+ok(@{$d->_extractClassFromPatch($projectName)}[0] eq $defectiveClass, 'Testing _extractClassFromPatch');
+
+dies_ok(sub {$d->getDefectiveClass($projectName, $firstBugVersionName)}, 'Test failing getDefectiveClass method: text as version number');
+
+dies_ok(sub {$d->getDefectiveClass($projectName, 200)}, 'Test failing getDefectiveClass method: wrong version number');
+
+ok(@{$d->getDefectiveClass($projectName, 0)}[0] eq $defectiveClass, 'Testing getDefectiveClass');
+
+my $firstInputDirectory = "${outpath}/bugs-dot-jar/accumulo/trace/src/main";
+$d->_checkoutToClass($projectName, $firstBugVersionName);
+ok( @{$d->_getInputDirectories($projectName)}[0] eq $firstInputDirectory, 'Testing _getInputDirectories');
+
+$d->extractSmells($projectName, 0);
+
+my $inputDirectory = "/tmp/bugs-dot-jar/accumulo/examples/simple/src/main";
+my $outputDirectory = "/tmp/designite";
+my $designSmells = "${outputDirectory}/designCodeSmells.csv";
+my $firstDesignSmell = "main,org.apache.accumulo.examples.simple.helloworld,Opts,Unnecessary Abstraction";
+#$d->_runDesignite($inputDirectory,$outputDirectory);
+
+ok(@{$d->_getSmellsFromFile($designSmells)}[0] eq $firstDesignSmell, 'Testing _getSmellsFromFile');

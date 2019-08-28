@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib '../../lib';
+use v5.10;
+
+use Test::Simple tests => 12;
+use Test::More;
+use Test::Exception;
+
+require_ok('Extractor::Defects4JExtractor');
+require Extractor::Defects4JExtractor;
+
+my $outpath1 = "/tmp/smell";
+my $outpath2 = "/tmp/smells";
+my $d = Extractor::Defects4JExtractor->new(outpath => $outpath1);
+
+ok($d->outpath eq $outpath1, 'Testing instantiation for outpath attribute');
+
+ok($d->outpath($outpath1) eq $outpath1, 'Testing setter for outpath attribute');
+ok($d->outpath() eq $outpath1,  'Testing getter for outpath attribute');
+
+ok($d->getNumberOfBugs("Lang") eq "65",'Testing a successful execution of getNumberOfBugs');
+
+ok($d->getNumberOfBugs("lang") eq "65",'Testing a successful execution of getNumberOfBugs with lowercase project name');
+
+dies_ok(sub {$d->getNumberOfBugs("ang")}, 'Testing getNumberOfBugs when given a wrong project');
+
+ok($d->getDefectiveClass("Lang", "1") eq "org.apache.commons.lang3.math.NumberUtils", 'Testing successful execution of getDefectiveClass');
+
+ok($d->getDefectiveClass("lang", "1") eq "org.apache.commons.lang3.math.NumberUtils", 'Testing successful execution of getDefectiveClass with lowercase project name');
+
+dies_ok(sub {$d->getDefectiveClass("ang", "1")}, 'Testing getDefectiveClass when given wrong project');
+
+dies_ok(sub {$d->getDefectiveClass("Lang", "t")}, 'Testing getDefectiveClass when given a bug with the wrong format');
+
+ok($d->extractSmells("Chart", "1") == 1, 'Testing extractSmells successful execution');
+ok($d->extractSmells("Closure", "1") == 1, 'Testing extractSmells successful execution');
+ok($d->extractSmells("Lang", "1") == 1, 'Testing extractSmells successful execution');
+ok($d->extractSmells("Math", "30") == 1, 'Testing extractSmells successful execution');
+ok($d->extractSmells("Time", "1") == 1, 'Testing extractSmells successful execution');
+ok($d->extractSmells("Mockito", "1") == 1, 'Testing extractSmells successful execution');
+
+$d->cleanFiles();

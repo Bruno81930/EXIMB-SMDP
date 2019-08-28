@@ -1,0 +1,33 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use lib '../../lib';
+use v5.10;
+
+use Test::Simple tests => 5;
+use Test::More;
+use Test::Exception;
+
+require_ok('Util::ConfigReader');
+require Util::ConfigReader;
+
+my $configDir = "/Users/brunomachado/Documents/Faculdade/Tese/Execution/smell-based-tcp/extractor/config";
+my $reader = Util::ConfigReader->new(configdir => $configDir);
+
+
+my $wrongConfigDir = "/Users/brunomachado/Documents/Faculdade/Tese/Execution/smell-based-tcp/extractor/config/wrong";
+dies_ok(sub { my $reader = Util::ConfigReader->new(configdir => $wrongConfigDir) }, "Test if fails when wrong input is given");
+
+
+dies_ok(sub { my $reader = Util::ConfigReader->new() }, "Test if fails when no input is given");
+
+ok($reader->_isDefects4jActive(), "Test method isDefects4jActive" );
+
+ok($reader->_isBugsDotJarActive(), "Test method isBugsDotJarActive" );
+
+my $d4jfirstProjectName = "Chart";
+ok(@{$reader->getDefects4jProjects()}[0] eq $d4jfirstProjectName, "Test method getDefects4jProjects");
+
+my $bdjfirstProjectName = "accumulo";
+ok(@{$reader->getBugsDotJarProjects()}[0] eq $bdjfirstProjectName, "Test method getBugsDotJarProjects");
