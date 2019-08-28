@@ -1,4 +1,4 @@
-#Dataset Preparation
+# Dataset Preparation
 
 In this module we prepare the generated dataset for training. Therefore, we apply the following operations:
 1. Feature Scaling - Standardization
